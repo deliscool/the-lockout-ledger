@@ -1,0 +1,347 @@
+<title>The Lockout Ledger</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    color-scheme: light;
+    --page:#f9f9f7; --surface:#fcfcfb; --surface-2:#ffffff;
+    --ink:#0b0b0b; --ink-2:#52514e; --muted:#898781;
+    --grid:#e1e0d9; --axis:#c3c2b7; --border:rgba(11,11,11,0.10);
+    --accent:#2a78d6; --accent-ink:#ffffff; --critical:#d03b3b;
+    --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100;
+    --s5:#e87ba4; --s6:#008300; --s7:#4a3aa7; --s8:#e34948;
+    --serif:"Source Serif 4", Georgia, serif;
+    --sans:"IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --mono:"IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      color-scheme: dark;
+      --page:#0d0d0d; --surface:#1a1a19; --surface-2:#201f1d;
+      --ink:#ffffff; --ink-2:#c3c2b7; --muted:#8f8d87;
+      --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,0.10);
+      --accent:#3987e5; --accent-ink:#ffffff; --critical:#e66767;
+      --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500;
+      --s5:#d55181; --s6:#3fbf3f; --s7:#9085e9; --s8:#e66767;
+    }
+  }
+  :root[data-theme="dark"]{
+    color-scheme: dark;
+    --page:#0d0d0d; --surface:#1a1a19; --surface-2:#201f1d;
+    --ink:#ffffff; --ink-2:#c3c2b7; --muted:#8f8d87;
+    --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,0.10);
+    --accent:#3987e5; --accent-ink:#ffffff; --critical:#e66767;
+    --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500;
+    --s5:#d55181; --s6:#3fbf3f; --s7:#9085e9; --s8:#e66767;
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    background:var(--page); color:var(--ink); font-family:var(--sans);
+    padding-inline:20px; padding-block:28px 64px; max-width:100%;
+  }
+  .wrap{ max-width:840px; margin:0 auto; }
+
+  .caseno{
+    font-family:var(--mono); font-size:11px; letter-spacing:.08em; color:var(--muted);
+    text-transform:uppercase; display:flex; gap:8px; align-items:center; margin-bottom:14px; flex-wrap:wrap;
+  }
+  .caseno .dot{width:5px;height:5px;border-radius:50%;background:var(--critical);}
+
+  h1{
+    font-family:var(--serif); font-weight:700; font-size:clamp(28px,6vw,42px);
+    line-height:1.08; letter-spacing:-.01em; margin:0 0 10px; text-wrap:balance;
+  }
+  .dek{
+    font-size:16px; line-height:1.55; color:var(--ink-2); max-width:60ch; margin:0 0 28px;
+  }
+  .byline{
+    font-family:var(--mono); font-size:12px; color:var(--muted); border-top:1px solid var(--border);
+    border-bottom:1px solid var(--border); padding-block:10px; margin-bottom:32px;
+    display:flex; gap:6px; flex-wrap:wrap;
+  }
+  .byline b{color:var(--ink-2); font-weight:500;}
+
+  .stats{
+    display:grid; grid-template-columns:repeat(4,1fr); gap:1px; background:var(--border);
+    border:1px solid var(--border); margin-bottom:40px; border-radius:2px; overflow:hidden;
+  }
+  @media (max-width:560px){ .stats{ grid-template-columns:repeat(2,1fr); } }
+  .stat{ background:var(--surface); padding:16px 14px; }
+  .stat .n{
+    font-family:var(--serif); font-weight:700; font-size:28px; line-height:1; margin-bottom:6px;
+    font-variant-numeric:tabular-nums;
+  }
+  .stat .l{ font-size:11.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; line-height:1.3; }
+
+  section{ margin-bottom:44px; }
+  h2{
+    font-family:var(--serif); font-size:20px; font-weight:600; margin:0 0 4px; letter-spacing:-.005em;
+  }
+  .section-note{ font-size:13.5px; color:var(--muted); margin:0 0 18px; max-width:62ch; line-height:1.5; }
+
+  /* bar chart */
+  .chart{ display:flex; flex-direction:column; gap:10px; }
+  .bar-row{ display:grid; grid-template-columns:140px 1fr 46px; align-items:center; gap:10px; cursor:default; }
+  @media (max-width:480px){ .bar-row{ grid-template-columns:96px 1fr 40px; } }
+  .bar-label{ font-size:12.5px; color:var(--ink-2); text-align:right; line-height:1.25; }
+  .bar-track{ position:relative; height:22px; background:var(--grid); border-radius:4px; overflow:hidden; }
+  .bar-fill{
+    position:absolute; inset:0 auto 0 0; height:100%; border-radius:4px;
+    transition:filter .15s ease; min-width:6px;
+  }
+  .bar-row:hover .bar-fill{ filter:brightness(1.08); }
+  .bar-val{ font-family:var(--mono); font-size:12.5px; font-variant-numeric:tabular-nums; color:var(--ink); }
+
+  .tooltip{
+    position:fixed; pointer-events:none; z-index:50; background:var(--ink); color:var(--page);
+    font-size:12px; line-height:1.4; padding:8px 10px; border-radius:6px; max-width:240px;
+    box-shadow:0 6px 20px rgba(0,0,0,.25); opacity:0; transform:translateY(4px);
+    transition:opacity .1s ease, transform .1s ease;
+  }
+  .tooltip.show{ opacity:1; transform:translateY(0); }
+  .tooltip b{ display:block; margin-bottom:2px; }
+
+  /* delta cards */
+  .deltas{ display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+  @media (max-width:560px){ .deltas{ grid-template-columns:repeat(2,1fr); } }
+  .dcard{
+    background:var(--surface); border:1px solid var(--border); border-radius:6px; padding:14px;
+  }
+  .dcard .region{ font-family:var(--mono); font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; margin-bottom:8px;}
+  .dcard .val{ font-family:var(--serif); font-weight:700; font-size:24px; margin-bottom:4px; font-variant-numeric:tabular-nums;}
+  .dcard .yr{ font-size:11.5px; color:var(--muted); margin-bottom:10px; }
+  .dcard .delta{
+    display:inline-flex; align-items:center; gap:5px; font-family:var(--mono); font-size:11.5px;
+    color:var(--critical); font-weight:500;
+  }
+  .dcard .delta.flat{ color:var(--muted); }
+
+  /* tone cards */
+  .tones{ display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+  @media (max-width:680px){ .tones{ grid-template-columns:1fr; } }
+  .tcard{ background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:16px; }
+  .tcard .chip{
+    display:inline-block; font-family:var(--mono); font-size:10.5px; letter-spacing:.04em;
+    text-transform:uppercase; padding:3px 8px; border-radius:99px; color:var(--accent-ink); margin-bottom:10px;
+  }
+  .tcard p{ font-size:13px; line-height:1.55; color:var(--ink-2); margin:0; }
+  .tcard .quote{ font-family:var(--serif); font-style:italic; font-size:14.5px; color:var(--ink); margin-top:10px; line-height:1.4; }
+
+  /* pipeline */
+  .pipeline{ display:flex; align-items:stretch; gap:0; overflow-x:auto; padding-bottom:6px; }
+  .pstep{
+    flex:1 0 148px; background:var(--surface); border:1px solid var(--border); border-radius:8px;
+    padding:14px 12px; position:relative;
+  }
+  .pstep .k{ font-family:var(--mono); font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; margin-bottom:6px;}
+  .pstep .t{ font-weight:600; font-size:13.5px; margin-bottom:5px; }
+  .pstep .d{ font-size:11.5px; color:var(--ink-2); line-height:1.4; }
+  .parrow{ flex:0 0 22px; display:flex; align-items:center; justify-content:center; color:var(--muted); font-size:16px; }
+
+  /* dashboard cta */
+  .cta{
+    background:var(--surface); border:1px dashed var(--axis); border-radius:8px; padding:20px;
+    display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;
+  }
+  .cta .ctal .t{ font-weight:600; font-size:15px; margin-bottom:3px; }
+  .cta .ctal .d{ font-size:12.5px; color:var(--muted); }
+  .cta .badge{
+    font-family:var(--mono); font-size:10.5px; letter-spacing:.05em; text-transform:uppercase;
+    color:var(--muted); border:1px solid var(--border); padding:6px 12px; border-radius:99px; white-space:nowrap;
+  }
+
+  footer{
+    border-top:1px solid var(--border); padding-top:18px; margin-top:8px;
+    font-size:12px; color:var(--muted); line-height:1.6;
+  }
+  footer a{ color:var(--muted); }
+</style>
+
+<div class="wrap">
+  <div class="caseno"><span class="dot"></span>CASE FB-2026-0925 &middot; STATUS: OPEN &middot; 44 RECORDS LOGGED</div>
+
+  <h1>The Lockout Ledger</h1>
+  <p class="dek">A cross-platform record of real complaints about Meta disabling Facebook and Instagram accounts, 2019&ndash;2026 &mdash; pulled from state attorney general filings, news investigations, a public petition, and 21 firsthand LinkedIn posts, and categorized by where each signal originated.</p>
+
+  <div class="byline">
+    <span>Built on <b>Databricks</b></span>&middot;
+    <span><b>Unity Catalog</b> &rarr; <b>Delta Lake</b> &rarr; <b>SQL</b></span>&middot;
+    <span>Last compiled <b>Sep 25, 2026</b></span>
+  </div>
+
+  <div class="stats" id="stats"></div>
+
+  <section>
+    <h2>Signal by source</h2>
+    <p class="section-note">Every logged record, grouped by where it came from. LinkedIn carries the most volume &mdash; not because it's the loudest venue for this topic, but because it was the only source reachable by a signed-in search rather than a public API.</p>
+    <div class="chart" id="chart-platform"></div>
+  </section>
+
+  <section>
+    <h2>What kind of complaint</h2>
+    <p class="section-note">The same 44 records, grouped by category instead of source. Wrongful, unexplained disabling dominates &mdash; account takeover (hacked accounts) is the next largest, and is a distinct problem with a distinct cause.</p>
+    <div class="chart" id="chart-category"></div>
+  </section>
+
+  <section>
+    <h2>Attorney general complaint counts, most recent year on file</h2>
+    <p class="section-note">The only hard numbers in this dataset &mdash; official counts logged with four state AG offices. Where a prior year is on record, the increase is shown below each bar.</p>
+    <div class="deltas" id="deltas"></div>
+  </section>
+
+  <section>
+    <h2>How the same problem reads by platform</h2>
+    <p class="section-note">Three sources, three different framings of the same underlying issue.</p>
+    <div class="tones">
+      <div class="tcard">
+        <span class="chip" style="background:var(--s1)">LinkedIn</span>
+        <p>Business-first. Posts read as warnings to other founders: check your admin permissions, diversify off the platform, don't be the sole account owner.</p>
+        <p class="quote">&ldquo;A founder who was sole Business Manager admin lost access with 80% of revenue on Meta.&rdquo;</p>
+      </div>
+      <div class="tcard">
+        <span class="chip" style="background:var(--s2)">News Media</span>
+        <p>Accountability-first. Coverage centers on Meta's lack of a human appeals process and the false-allegation pattern behind many disablings.</p>
+        <p class="quote">&ldquo;They said they couldn't tell me due to privacy and security reasons &mdash; it's my account.&rdquo;</p>
+      </div>
+      <div class="tcard">
+        <span class="chip" style="background:var(--s3)">Government / AG</span>
+        <p>Volume-first. State attorneys general track raw complaint counts and year-over-year growth rather than individual stories.</p>
+        <p class="quote">&ldquo;We refuse to operate as the customer service representatives of your company.&rdquo;</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>How this was built</h2>
+    <p class="section-note">Research compiled here, then loaded into Databricks for the analysis layer.</p>
+    <div class="pipeline">
+      <div class="pstep"><div class="k">Step 1</div><div class="t">CSV</div><div class="d">44 records compiled from AG filings, news, petition, and LinkedIn</div></div>
+      <div class="parrow">&rarr;</div>
+      <div class="pstep"><div class="k">Step 2</div><div class="t">Volume</div><div class="d">Uploaded to a Unity Catalog volume in Databricks</div></div>
+      <div class="parrow">&rarr;</div>
+      <div class="pstep"><div class="k">Step 3</div><div class="t">Delta Table</div><div class="d">Loaded as a managed table: workspace.fb_complaints.complaints</div></div>
+      <div class="parrow">&rarr;</div>
+      <div class="pstep"><div class="k">Step 4</div><div class="t">SQL</div><div class="d">Grouped and ranked by platform, category, and year</div></div>
+      <div class="parrow">&rarr;</div>
+      <div class="pstep"><div class="k">Step 5</div><div class="t">Dashboard</div><div class="d">Pinned tiles built from the SQL, updated as new records land</div></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="cta">
+      <div class="ctal">
+        <div class="t">Live Databricks dashboard</div>
+        <div class="d">Not yet published &mdash; will link here once the dashboard is shared from Databricks.</div>
+      </div>
+      <span class="badge">Pending</span>
+    </div>
+  </section>
+
+  <footer>
+    Sources: state attorney general offices (NY, PA, MI, MA), ABC7 Los Angeles, CBS News Philadelphia, The Register, Change.org, Meta's Oversight Board, and 21 individually cited LinkedIn posts. Figures are as publicly reported and are not independently audited; several entries are undated or approximate where the original source gave no exact date. Compiled for a Databricks foundations project.
+  </footer>
+</div>
+
+<div class="tooltip" id="tooltip"></div>
+
+<script>
+(function(){
+  var platforms = [
+    {name:"LinkedIn", n:21, slot:"--s1", note:"Small business owners, creators, and agencies — mostly framed around lost revenue and account access, dated Nov 2025–Sep 2026."},
+    {name:"Government / AG", n:13, slot:"--s2", note:"Official complaint counts logged with state Attorneys General across NY, PA, MI, and MA, 2019–2025."},
+    {name:"News Media", n:3, slot:"--s3", note:"Investigative reports from ABC7 Los Angeles and CBS News Philadelphia, 2025–2026."},
+    {name:"Petition", n:2, slot:"--s4", note:"Change.org ‘Hold Meta Accountable’ campaign — grew from 56K to 65K+ signatures across 2026."},
+    {name:"Forum / Community", n:2, slot:"--s5", note:"Long-running user threads on Tom’s Guide and Shopify Community forums."},
+    {name:"Meta Official", n:1, slot:"--s6", note:"Meta’s own blog disclosure: 10M+ accounts deleted in a 2025 spam-cleanup purge."},
+    {name:"Reddit", n:1, slot:"--s7", note:"r/MetaLawsuits post referenced in press coverage of the July 2025 ‘ban wave.’"},
+    {name:"Oversight Board", n:1, slot:"--s8", note:"Meta’s own Oversight Board case — 750+ public comments received on wrongful disabling."}
+  ];
+
+  var categories = [
+    {name:"Wrongful disable", n:25, slot:"--s1", note:"Account disabled with no clear policy violation cited, across every source type."},
+    {name:"Account takeover", n:13, slot:"--s2", note:"Hacked or compromised accounts — a distinct problem, tracked mainly by state AG offices."},
+    {name:"Mass purge", n:3, slot:"--s3", note:"Caught in Meta’s bulk 2025 ‘spam cleanup,’ which removed 10M+ accounts, some legitimate."},
+    {name:"General / other", n:2, slot:"--s4", note:"Disabled for a specific input error (e.g. a wrong birthdate) rather than policy enforcement."},
+    {name:"Ads account disabled", n:1, slot:"--s5", note:"Business ad account specifically disabled, separate from the personal profile."}
+  ];
+
+  var states = [
+    {region:"New York", val:783, yr:"2023", prior:78, priorYr:"2019"},
+    {region:"Pennsylvania", val:556, yr:"2023", prior:150, priorYr:"2022"},
+    {region:"Michigan", val:485, yr:"2024", prior:50, priorYr:"2022"},
+    {region:"Massachusetts", val:300, yr:"2025", prior:null, priorYr:null}
+  ];
+
+  var tip = document.getElementById("tooltip");
+  function showTip(e, title, note){
+    tip.innerHTML = "<b>"+title+"</b>"+note;
+    tip.classList.add("show");
+    moveTip(e);
+  }
+  function moveTip(e){
+    var x = e.clientX + 14, y = e.clientY + 14;
+    var w = 240, h = 90;
+    if (x + w > window.innerWidth) x = e.clientX - w - 14;
+    if (y + h > window.innerHeight) y = e.clientY - h - 14;
+    tip.style.left = x+"px"; tip.style.top = y+"px";
+  }
+  function hideTip(){ tip.classList.remove("show"); }
+
+  function renderBars(containerId, data){
+    var el = document.getElementById(containerId);
+    var max = Math.max.apply(null, data.map(function(d){return d.n;}));
+    data.forEach(function(d){
+      var row = document.createElement("div");
+      row.className = "bar-row";
+      var pct = Math.max((d.n/max)*100, 4);
+      row.innerHTML =
+        '<div class="bar-label">'+d.name+'</div>'+
+        '<div class="bar-track"><div class="bar-fill" style="width:'+pct+'%; background:var('+d.slot+')"></div></div>'+
+        '<div class="bar-val">'+d.n+'</div>';
+      row.addEventListener("mousemove", function(e){ moveTip(e); });
+      row.addEventListener("mouseenter", function(e){ showTip(e, d.name+" — "+d.n, "<br>"+d.note); });
+      row.addEventListener("mouseleave", hideTip);
+      el.appendChild(row);
+    });
+  }
+
+  renderBars("chart-platform", platforms);
+  renderBars("chart-category", categories);
+
+  var statsEl = document.getElementById("stats");
+  var total = platforms.reduce(function(a,d){return a+d.n;},0);
+  var stats = [
+    {n:total, l:"Total records logged"},
+    {n:platforms.length, l:"Distinct source platforms"},
+    {n:"2019–26", l:"Date range covered"},
+    {n:"25", l:"Wrongful-disable reports"}
+  ];
+  stats.forEach(function(s){
+    var d = document.createElement("div");
+    d.className = "stat";
+    d.innerHTML = '<div class="n">'+s.n+'</div><div class="l">'+s.l+'</div>';
+    statsEl.appendChild(d);
+  });
+
+  var deltasEl = document.getElementById("deltas");
+  states.forEach(function(s){
+    var d = document.createElement("div");
+    d.className = "dcard";
+    var deltaHtml;
+    if (s.prior){
+      var pct = Math.round(((s.val - s.prior) / s.prior) * 100);
+      deltaHtml = '<span class="delta">&#9650; +'+pct+'% since '+s.priorYr+'</span>';
+    } else {
+      deltaHtml = '<span class="delta flat">First year tracked</span>';
+    }
+    d.innerHTML =
+      '<div class="region">'+s.region+'</div>'+
+      '<div class="val">'+s.val.toLocaleString()+'</div>'+
+      '<div class="yr">complaints logged, '+s.yr+'</div>'+
+      deltaHtml;
+    deltasEl.appendChild(d);
+  });
+})();
+</script>
