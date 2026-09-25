@@ -5,7 +5,7 @@ Meta disabling Facebook and Instagram accounts, 2019–2026 — built as a
 Databricks foundations project.
 
 **Live page:** _link goes here once GitHub Pages is turned on_
-**Live Databricks dashboard:** _pending_
+**Databricks dashboard:** static export below (Free Edition has no public, no-login share link)
 
 ## What this is
 
@@ -23,6 +23,7 @@ dataset instead of a toy tutorial dataset.
 | File | What it is |
 |---|---|
 | `index.html` | The published showcase page — static, no live credentials |
+| `dashboard-export.png` | Static export of the live Databricks dashboard |
 | `facebook_complaints_2024_2026.csv` | The source dataset |
 | `01_setup_and_load.py` | Databricks notebook — loads the CSV into a Delta table |
 | `02_analysis_queries.sql` | SQL notebook — the analysis queries behind the dashboard |
