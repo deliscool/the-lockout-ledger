@@ -68,6 +68,24 @@ ORDER BY pct_change DESC;
 
 -- COMMAND ----------
 
+-- 4b. "Most recent COMPLETE year" AG complaints by region — use this for
+--    the dashboard's region comparison chart instead of a plain MAX(year).
+--    Excludes any row whose notes flag it as a partial year, so a region
+--    with a partial current-year entry (e.g. Michigan's Jan–Mar 2025 count)
+--    falls back to its last full year instead of understating the region.
+WITH full_years AS (
+  SELECT region, year, value AS complaint_count, notes
+  FROM complaints
+  WHERE metric_type = 'ag_complaints'
+    AND NOT lower(notes) LIKE '%partial%'
+)
+SELECT region, year, complaint_count
+FROM full_years
+QUALIFY ROW_NUMBER() OVER (PARTITION BY region ORDER BY year DESC) = 1
+ORDER BY complaint_count DESC;
+
+-- COMMAND ----------
+
 -- 5. Petition signature growth over time (a rough proxy for public
 --    complaint momentum where no hard agency number exists)
 SELECT
