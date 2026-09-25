@@ -46,4 +46,4 @@ are undated or approximate where the original source gave no exact date.
 
 ## Built by
 
-Del · [DevMoms](https://devmoms.com)
+Del · [Del](https://deliscool.github.io/portfolio-site-delguerra/)
