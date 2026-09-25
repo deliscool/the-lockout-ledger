@@ -41,25 +41,42 @@ dataset instead of a toy tutorial dataset.
 Figures are as publicly reported and not independently audited. Some entries
 are undated or approximate where the original source gave no exact date.
 
-## Top 4 things I learned
+## Top 4 things I learned — for PMs, product owners, and program managers
 
-1. **Unity Catalog's permission hierarchy stacks.** `SELECT` on a table isn't
-   enough — you also need `USE CATALOG` and `USE SCHEMA` on everything above
-   it, or the grant does nothing.
-2. **Delta tables aren't just "CSV but managed."** Loading the same CSV as a
-   managed Delta table vs. reading it directly changes how Unity Catalog
-   governs and versions it — worth the extra setup step even for a small
-   dataset.
-3. **A dashboard's SQL can quietly lie to you.** My "most recent year"
-   region chart was pulling a global `MAX(year)` across every region, so one
-   partial-year data point (Michigan) silently overwrote a real, complete
-   year. The chart rendered fine — it was just wrong. Always check what a
-   `MAX()` or `ORDER BY ... LIMIT 1` is actually scoped to.
-4. **"Public" has more than one meaning in Databricks.** Free Edition's
-   dashboard "sharing" still requires viewers to sign in — the query runs
-   under the creator's credentials, not anonymous access. A truly public,
-   no-login view means exporting a static PDF/image, which is why the
-   dashboard below is a picture and not a live link.
+I came into this as a platform admin, not a data engineer. Here's what
+stood out as genuinely useful for anyone who scopes, ships, or governs
+products with data behind them — not just people who write the SQL.
+
+1. **It replaces "who has the master CSV?" with one governed source of
+   truth.** Every team I've worked on has a version of this pain point: a
+   spreadsheet gets emailed around, someone edits a copy, and nobody's sure
+   which one is current. Unity Catalog gives every table and column one
+   real address (`catalog.schema.table`) with its own access controls, so
+   "where's the current data" stops being a Slack question. For a PM, that's
+   fewer status-check pings and fewer decisions made on stale numbers.
+2. **It shortens the gap between "raw data" and "something stakeholders can
+   see."** This whole project went from a messy CSV to a working dashboard
+   without a data engineer, a BI license, or a deploy pipeline — load the
+   file, write SQL, pin a chart. That's the prototyping win: you can hand a
+   product decision a real visual instead of a slide built from a manual
+   pivot table, and iterate on it live instead of re-exporting a new chart
+   every time the ask changes.
+3. **Data cleaning is still the real bottleneck — Databricks doesn't remove
+   it, it just gives you a place to see it.** My biggest time sink wasn't
+   the platform, it was the CSV itself: inconsistent date formats, one
+   partial-year data point sitting next to full-year ones, categories that
+   needed merging before they'd chart cleanly. The lesson for a PM scoping
+   a data project: budget real time for data cleanup before analysis,
+   because "we have the data" and "the data is usable" are different
+   milestones — and a bad assumption there produced a genuinely misleading
+   chart in this project (see the SQL notebook's query 4b for the fix).
+4. **A "streamlined" pipeline still has a chain of custody worth mapping.**
+   CSV → Delta table → SQL → dashboard is simple to describe but each hop
+   is a place scope, permissions, or definitions can drift — exactly what
+   happened when a chart's "most recent year" logic didn't match what the
+   underlying data actually supported. For a program manager, the takeaway
+   isn't "trust the pipeline," it's that each stage deserves its own
+   sign-off, the same way you'd checkpoint any multi-stage deliverable.
 
 ## Stack
 
